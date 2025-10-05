@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Phân Tích Tình Cảm Đa Ngôn Ngữ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        #score-circle { transition: stroke-dasharray 0.8s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen py-12">
+    <div class="container mx-auto p-4 max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-10">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Phân Tích Tình Cảm</h1>
+                <p class="text-gray-500 mt-2">Hãy nhập một đoạn văn bằng tiếng Anh hoặc tiếng Việt để khám phá sentiment trong đoạn văn.</p>
+            </div>
+
+            <form id="sentiment-form">
+                <textarea id="text-input" rows="5" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200" placeholder="Ví dụ: 'Bộ phim này thật tuyệt vời!' hoặc 'This movie was fantastic!'"></textarea>
+                <button type="submit" id="analyze-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 flex items-center justify-center relative">
+                    <svg id="analyze-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <span id="btn-text">Phân tích</span>
+                    <span class="absolute right-4 text-xs font-normal opacity-60 hidden sm:block">Ctrl + Enter</span>
+                </button>
+            </form>
+
+            <div id="result-container" class="mt-8 hidden">
+                <div id="result-card" class="p-6 rounded-lg border-2 transition-all duration-300">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div class="text-6xl text-center md:text-left mb-4 md:mb-0" id="result-emoji"></div>
+                        <div class="flex-grow text-center md:text-left md:ml-6">
+                            <p class="text-sm font-medium text-gray-500">KẾT QUẢ PHÂN TÍCH</p>
+                            <p class="text-2xl font-bold" id="result-sentiment"></p>
+                            <p class="text-sm text-gray-600" id="result-language"></p>
+                        </div>
+                        <div class="w-full md:w-auto mt-4 md:mt-0 text-center">
+                            <p class="text-sm font-medium text-gray-500 mb-1">ĐỘ TIN CẬY</p>
+                            <div class="relative w-24 h-24 mx-auto">
+                                <svg class="w-full h-full" viewBox="0 0 36 36">
+                                    <path class="text-gray-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" stroke="currentColor" />
+                                    <path id="score-circle" class="text-indigo-600" stroke-width="3" stroke-dasharray="0, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="currentColor" />
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center"><span id="result-score" class="text-l font-bold text-gray-800"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="emotions-container" class="mt-6">
+                    <h3 class="font-semibold text-gray-700 mb-3">Các sắc thái cảm xúc nổi bật</h3>
+                    <div id="emotions-list" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div id="suggestion-container" class="mt-6">
+                     <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-4 rounded-r-lg">
+                        <div class="flex">
+                            <div class="py-1"><svg class="h-6 w-6 text-indigo-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
+                            <div>
+                                <p class="font-bold">Gợi ý cho bạn</p>
+                                <p class="text-sm" id="suggestion-text"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="error-container" class="mt-4 hidden">
+                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                    <strong class="font-bold">Lỗi!</strong>
+                    <span class="block sm:inline" id="error-message"></span>
+                </div>
+            </div>
+        </div>
+        <footer class="text-center mt-6 text-sm text-gray-500">
+            <p>&copy; 2025 - Bản quyền thuộc về nhóm 3</p>
+        </footer>
+    </div>
+
+    <script>
+        const form = document.getElementById('sentiment-form');
+        const textInput = document.getElementById('text-input');
+        const resultContainer = document.getElementById('result-container');
+        const errorContainer = document.getElementById('error-container');
+        const spinner = document.getElementById('spinner');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const btnText = document.getElementById('btn-text');
+        const analyzeIcon = document.getElementById('analyze-icon');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = textInput.value;
+            if (!text.trim()) {
+                showError('Vui lòng nhập nội dung để phân tích.');
+                return;
+            }
+            resultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            analyzeIcon.classList.add('hidden');
+            btnText.textContent = 'Đang phân tích...';
+            analyzeBtn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showError(data.error || 'Đã xảy ra lỗi không xác định.');
+                } else {
+                    displayResult(data);
+                }
+            } catch (error) {
+                showError('Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại.');
+            } finally {
+                spinner.classList.add('hidden');
+                analyzeIcon.classList.remove('hidden');
+                btnText.textContent = 'Phân tích';
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                analyzeBtn.click();
+            }
+        });
+
+        function displayResult(data) {
+            const resultCard = document.getElementById('result-card');
+            document.getElementById('result-emoji').textContent = data.emoji;
+            document.getElementById('result-sentiment').textContent = data.sentiment;
+            document.getElementById('result-language').textContent = `(Ngôn ngữ: ${data.language})`;
+            document.getElementById('result-score').textContent = `${data.score}%`;
+            
+            resultCard.className = 'p-6 rounded-lg border-2 transition-all duration-300';
+            resultCard.classList.add(...data.color.split(' '));
+            
+            setTimeout(() => {
+                 document.getElementById('score-circle').style.strokeDasharray = `${data.score}, 100`;
+            }, 100);
+
+            const emotionsList = document.getElementById('emotions-list');
+            emotionsList.innerHTML = '';
+            if (data.emotions && data.emotions.length > 0) {
+                data.emotions.forEach(emotion => {
+                    emotionsList.innerHTML += `
+                        <div class="flex items-center bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                            <span class="mr-2">${emotion.emoji}</span>
+                            <span>${emotion.label}</span>
+                            <span class="text-gray-500 ml-2">${emotion.score}%</span>
+                        </div>
+                    `;
+                });
+                document.getElementById('emotions-container').classList.remove('hidden');
+            } else {
+                 document.getElementById('emotions-container').classList.add('hidden');
+            }
+
+            document.getElementById('suggestion-text').textContent = "HÃY CHIA SẺ CAM XÚC CỦA BẠN NHÉ!";
+            document.getElementById('suggestion-container').classList.remove('hidden');
+
+            resultContainer.classList.remove('hidden', 'fade-in');
+            void resultContainer.offsetWidth;
+            resultContainer.classList.add('fade-in');
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorContainer.classList.remove('hidden', 'fade-in');
+            void errorContainer.offsetWidth;
+            errorContainer.classList.add('fade-in');
+        }
+    </script>
+</body>
+</html>
+
