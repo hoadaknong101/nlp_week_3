@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, jsonify
 from services.sentiment_service import analyze_sentiment, initialize_model
+from flask import Flask, render_template, request, jsonify
 from services.crawl_data_reddit import reddit
+from common.constant import COMMENT_LIMIT
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -57,15 +58,11 @@ def analyze_social_post():
         submission.comments.replace_more(limit=0)
         comment_count = 0
 
-        # Tăng giới hạn bình luận được phân tích
-        COMMENT_LIMIT = 50 
-
         for comment in submission.comments.list():
             if comment_count >= COMMENT_LIMIT:
                 break
             
             try:
-                # Bỏ qua các bình luận quá ngắn hoặc đã bị xóa
                 if not comment.body or comment.body == '[deleted]' or comment.body == '[removed]':
                     continue
 
@@ -75,7 +72,6 @@ def analyze_social_post():
                     logging.warning(f"Bình luận không thể phân tích: {comment.body[:30]}... Lỗi: {sentiment['error']}")
                     continue
                 
-                # Thêm cả author để có thể hiển thị nếu muốn
                 results.append({
                     'author': str(comment.author),
                     'text': comment.body,

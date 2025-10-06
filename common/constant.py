@@ -13,3 +13,5 @@ ENGLISH_SENTIMENT_MAP = {
     "NEGATIVE": {"label": "Tiêu cực", "emoji": "😠", "color": "bg-red-100 text-red-800 border-red-400"},
     "NEU": {"label": "Trung tính", "emoji": "😐", "color": "bg-blue-100 text-blue-800 border-blue-400"},
 }
+
+COMMENT_LIMIT = 50
