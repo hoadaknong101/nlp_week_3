@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         @keyframes fadeIn {
@@ -16,6 +17,19 @@
         }
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
         #score-circle { transition: stroke-dasharray 0.8s ease-in-out; }
+        .form-content {
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease-in-out;
+        }
+        .form-content:not(.active) {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .form-content.active {
+            max-height: 500px;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen py-12">
@@ -23,64 +37,95 @@
         <div class="bg-white rounded-2xl shadow-lg p-6 md:p-10">
             <div class="text-center mb-8">
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Phân Tích Tình Cảm</h1>
-                <p class="text-gray-500 mt-2">Hãy nhập một đoạn văn bằng tiếng Anh hoặc tiếng Việt để khám phá sentiment trong đoạn văn.</p>
+                <p class="text-gray-500 mt-2">Phân tích cảm xúc từ văn bản hoặc các bài đăng trên mạng xã hội.</p>
             </div>
 
-            <form id="sentiment-form">
-                <textarea id="text-input" rows="5" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200" placeholder="Ví dụ: 'Bộ phim này thật tuyệt vời!' hoặc 'This movie was fantastic!'"></textarea>
-                <button type="submit" id="analyze-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 flex items-center justify-center relative">
-                    <svg id="analyze-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span id="btn-text">Phân tích</span>
-                    <span class="absolute right-4 text-xs font-normal opacity-60 hidden sm:block">Ctrl + Enter</span>
-                </button>
-            </form>
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="flex space-x-2 sm:space-x-4" aria-label="Tabs">
+                    <button id="tab-text" class="px-3 py-2 font-semibold text-sm rounded-md text-white bg-indigo-600 transition-colors">Phân tích Văn bản</button>
+                    <button id="tab-social" class="px-3 py-2 font-semibold text-sm rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">Phân tích Mạng xã hội</button>
+                </nav>
+            </div>
+            <div id="text-analysis-section">
+                <form id="sentiment-form">
+                    <textarea id="text-input" rows="5" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200" placeholder="Ví dụ: 'Bộ phim này thật tuyệt vời!' hoặc 'This movie was fantastic!'"></textarea>
+                    <button type="submit" id="analyze-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 flex items-center justify-center relative">
+                        <svg id="analyze-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span id="btn-text">Phân tích Văn bản</span>
+                        <span class="absolute right-4 text-xs font-normal opacity-60 hidden sm:block">Ctrl + Enter</span>
+                    </button>
+                </form>
+            </div>
 
+            <div id="social-analysis-section" class="hidden">
+                <form id="social-form">
+                    <input type="url" id="social-url-input" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Dán link bài viết từ Reddit, X (Twitter)...">
+                    <button type="submit" id="analyze-social-btn" class="mt-4 w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 flex items-center justify-center relative">
+                        <svg id="analyze-social-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                        <svg id="spinner-social" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span id="social-btn-text">Phân tích Link</span>
+                    </button>
+                </form>
+            </div>
+            
             <div id="result-container" class="mt-8 hidden">
                 <div id="result-card" class="p-6 rounded-lg border-2 transition-all duration-300">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div class="text-6xl text-center md:text-left mb-4 md:mb-0" id="result-emoji"></div>
-                        <div class="flex-grow text-center md:text-left md:ml-6">
-                            <p class="text-sm font-medium text-gray-500">KẾT QUẢ PHÂN TÍCH</p>
-                            <p class="text-2xl font-bold" id="result-sentiment"></p>
-                            <p class="text-sm text-gray-600" id="result-language"></p>
-                        </div>
-                        <div class="w-full md:w-auto mt-4 md:mt-0 text-center">
-                            <p class="text-sm font-medium text-gray-500 mb-1">ĐỘ TIN CẬY</p>
-                            <div class="relative w-24 h-24 mx-auto">
-                                <svg class="w-full h-full" viewBox="0 0 36 36">
-                                    <path class="text-gray-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" stroke="currentColor" />
-                                    <path id="score-circle" class="text-indigo-600" stroke-width="3" stroke-dasharray="0, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="currentColor" />
-                                </svg>
-                                <div class="absolute inset-0 flex items-center justify-center"><span id="result-score" class="text-l font-bold text-gray-800"></span></div>
-                            </div>
-                        </div>
+                         <div class="text-6xl text-center md:text-left mb-4 md:mb-0" id="result-emoji"></div>
+                         <div class="flex-grow text-center md:text-left md:ml-6">
+                             <p class="text-sm font-medium text-gray-500">KẾT QUẢ PHÂN TÍCH</p>
+                             <p class="text-2xl font-bold" id="result-sentiment"></p>
+                             <p class="text-sm text-gray-600" id="result-language"></p>
+                         </div>
+                         <div class="w-full md:w-auto mt-4 md:mt-0 text-center">
+                             <p class="text-sm font-medium text-gray-500 mb-1">ĐỘ TIN CẬY</p>
+                             <div class="relative w-24 h-24 mx-auto">
+                                 <svg class="w-full h-full" viewBox="0 0 36 36">
+                                     <path class="text-gray-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3" stroke="currentColor" />
+                                     <path id="score-circle" class="text-indigo-600" stroke-width="3" stroke-dasharray="0, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" stroke="currentColor" />
+                                 </svg>
+                                 <div class="absolute inset-0 flex items-center justify-center"><span id="result-score" class="text-xl font-bold text-gray-800"></span></div>
+                             </div>
+                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div id="emotions-container" class="mt-6">
-                    <h3 class="font-semibold text-gray-700 mb-3">Các sắc thái cảm xúc nổi bật</h3>
-                    <div id="emotions-list" class="flex flex-wrap gap-2"></div>
-                </div>
-
-                <div id="suggestion-container" class="mt-6">
-                     <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-4 rounded-r-lg">
-                        <div class="flex">
-                            <div class="py-1"><svg class="h-6 w-6 text-indigo-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
-                            <div>
-                                <p class="font-bold">Gợi ý cho bạn</p>
-                                <p class="text-sm" id="suggestion-text"></p>
-                            </div>
+            <div id="social-result-container" class="mt-8 hidden fade-in">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Kết Quả Phân Tích Bình Luận</h3>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
+                        <div>
+                            <p class="text-3xl font-bold text-green-500" id="positive-percent">0%</p>
+                            <p class="text-sm text-gray-500 font-medium">Tích cực</p>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold text-red-500" id="negative-percent">0%</p>
+                            <p class="text-sm text-gray-500 font-medium">Tiêu cực</p>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-bold text-gray-600" id="neutral-percent">0%</p>
+                            <p class="text-sm text-gray-500 font-medium">Trung tính</p>
                         </div>
                     </div>
+                    <div class="w-full max-w-xs mx-auto mb-4">
+                        <canvas id="sentimentChart"></canvas>
+                    </div>
+                    <p class="text-center text-sm text-gray-600">Dựa trên <strong id="total-comments">0</strong> bình luận được phân tích.</p>
+                </div>
+                <div id="comment-details-section" class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Chi tiết một số bình luận</h4>
+                    <div id="comment-details-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        </div>
                 </div>
             </div>
             
             <div id="error-container" class="mt-4 hidden">
                  <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
-                    <strong class="font-bold">Lỗi!</strong>
-                    <span class="block sm:inline" id="error-message"></span>
-                </div>
+                     <strong class="font-bold">Lỗi!</strong>
+                     <span class="block sm:inline" id="error-message"></span>
+                 </div>
             </div>
         </div>
         <footer class="text-center mt-6 text-sm text-gray-500">
@@ -89,6 +134,7 @@
     </div>
 
     <script>
+        // --- Các biến cho phần phân tích văn bản (giữ nguyên) ---
         const form = document.getElementById('sentiment-form');
         const textInput = document.getElementById('text-input');
         const resultContainer = document.getElementById('result-container');
@@ -97,7 +143,56 @@
         const analyzeBtn = document.getElementById('analyze-btn');
         const btnText = document.getElementById('btn-text');
         const analyzeIcon = document.getElementById('analyze-icon');
+        
+        // --- TÍCH HỢP MỚI: Các biến cho phần phân tích mạng xã hội và Tabs ---
+        const tabText = document.getElementById('tab-text');
+        const tabSocial = document.getElementById('tab-social');
+        const textSection = document.getElementById('text-analysis-section');
+        const socialSection = document.getElementById('social-analysis-section');
+        
+        const socialForm = document.getElementById('social-form');
+        const socialUrlInput = document.getElementById('social-url-input');
+        const analyzeSocialBtn = document.getElementById('analyze-social-btn');
+        const socialBtnText = document.getElementById('social-btn-text');
+        const spinnerSocial = document.getElementById('spinner-social');
+        const analyzeSocialIcon = document.getElementById('analyze-social-icon');
+        const socialResultContainer = document.getElementById('social-result-container');
 
+        let sentimentChart = null; // Biến để lưu trữ đối tượng biểu đồ
+
+        // --- TÍCH HỢP MỚI: Logic chuyển đổi Tab ---
+        function switchTab(activeTab) {
+            // Ẩn tất cả các kết quả
+            resultContainer.classList.add('hidden');
+            socialResultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            
+            if (activeTab === 'text') {
+                textSection.classList.remove('hidden');
+                socialSection.classList.add('hidden');
+                
+                tabText.classList.add('bg-indigo-600', 'text-white');
+                tabText.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+                
+                tabSocial.classList.remove('bg-indigo-600', 'text-white');
+                tabSocial.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+            } else { // activeTab === 'social'
+                socialSection.classList.remove('hidden');
+                textSection.classList.add('hidden');
+                
+                tabSocial.classList.add('bg-indigo-600', 'text-white');
+                tabSocial.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+
+                tabText.classList.remove('bg-indigo-600', 'text-white');
+                tabText.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-100');
+            }
+        }
+        
+        tabText.addEventListener('click', () => switchTab('text'));
+        tabSocial.addEventListener('click', () => switchTab('social'));
+
+
+        // --- Logic cho form phân tích văn bản (giữ nguyên) ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = textInput.value;
@@ -105,6 +200,7 @@
                 showError('Vui lòng nhập nội dung để phân tích.');
                 return;
             }
+            socialResultContainer.classList.add('hidden');
             resultContainer.classList.add('hidden');
             errorContainer.classList.add('hidden');
             spinner.classList.remove('hidden');
@@ -129,7 +225,7 @@
             } finally {
                 spinner.classList.add('hidden');
                 analyzeIcon.classList.remove('hidden');
-                btnText.textContent = 'Phân tích';
+                btnText.textContent = 'Phân tích Văn bản';
                 analyzeBtn.disabled = false;
             }
         });
@@ -141,7 +237,53 @@
             }
         });
 
+        // --- TÍCH HỢP MỚI: Logic cho form phân tích mạng xã hội ---
+        socialForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = socialUrlInput.value;
+            
+            // Validate URL sơ bộ
+            try {
+                new URL(url);
+            } catch (_) {
+                showError('Vui lòng nhập một đường link (URL) hợp lệ.');
+                return;
+            }
+
+            resultContainer.classList.add('hidden');
+            socialResultContainer.classList.add('hidden');
+            errorContainer.classList.add('hidden');
+            spinnerSocial.classList.remove('hidden');
+            analyzeSocialIcon.classList.add('hidden');
+            socialBtnText.textContent = 'Đang xử lý...';
+            analyzeSocialBtn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showError(data.error || 'Lỗi không xác định khi phân tích link.');
+                } else {
+                    displaySocialResult(data);
+                }
+            } catch (error) {
+                showError('Không thể kết nối đến máy chủ để phân tích link.');
+            } finally {
+                spinnerSocial.classList.add('hidden');
+                analyzeSocialIcon.classList.remove('hidden');
+                socialBtnText.textContent = 'Phân tích Link';
+                analyzeSocialBtn.disabled = false;
+            }
+        });
+
+
+        // --- Hàm hiển thị kết quả phân tích văn bản (giữ nguyên, chỉ sửa nhỏ) ---
         function displayResult(data) {
+            //... (Nội dung hàm này giữ nguyên từ code gốc của bạn, không cần thay đổi)
             const resultCard = document.getElementById('result-card');
             document.getElementById('result-emoji').textContent = data.emoji;
             document.getElementById('result-sentiment').textContent = data.sentiment;
@@ -149,10 +291,15 @@
             document.getElementById('result-score').textContent = `${data.score}%`;
             
             resultCard.className = 'p-6 rounded-lg border-2 transition-all duration-300';
-            resultCard.classList.add(...data.color.split(' '));
+            resultCard.classList.add(...data.color.split(' ')); 
+            
+            const scoreCircle = document.getElementById('score-circle');
+            scoreCircle.style.transition = 'none';
+            scoreCircle.style.strokeDasharray = '0, 100';
             
             setTimeout(() => {
-                 document.getElementById('score-circle').style.strokeDasharray = `${data.score}, 100`;
+                scoreCircle.style.transition = 'stroke-dasharray 0.8s ease-in-out';
+                document.getElementById('score-circle').style.strokeDasharray = `${data.score}, 100`;
             }, 100);
 
             const emotionsList = document.getElementById('emotions-list');
@@ -169,10 +316,10 @@
                 });
                 document.getElementById('emotions-container').classList.remove('hidden');
             } else {
-                 document.getElementById('emotions-container').classList.add('hidden');
+                document.getElementById('emotions-container').classList.add('hidden');
             }
-
-            document.getElementById('suggestion-text').textContent = "HÃY CHIA SẺ CAM XÚC CỦA BẠN NHÉ!";
+            // Sửa đổi ở đây: dùng data.suggestion từ backend
+            document.getElementById('suggestion-text').textContent = data.suggestion || "Mọi cảm xúc đều đáng được trân trọng.";
             document.getElementById('suggestion-container').classList.remove('hidden');
 
             resultContainer.classList.remove('hidden', 'fade-in');
@@ -180,9 +327,74 @@
             resultContainer.classList.add('fade-in');
         }
 
+        function displaySocialResult(data) {
+            // Phần hiển thị tóm tắt và biểu đồ (giữ nguyên)
+            document.getElementById('positive-percent').textContent = `${data.positive_percent}%`;
+            document.getElementById('negative-percent').textContent = `${data.negative_percent}%`;
+            document.getElementById('neutral-percent').textContent = `${data.neutral_percent}%`;
+            document.getElementById('total-comments').textContent = data.total_comments;
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            if (sentimentChart) { sentimentChart.destroy(); }
+            sentimentChart = new Chart(ctx, { /* ... cấu hình chart giữ nguyên ... */
+                type: 'doughnut', data: { labels: ['Tích cực', 'Tiêu cực', 'Trung tính'], datasets: [{ data: [data.positive_percent, data.negative_percent, data.neutral_percent], backgroundColor: ['rgb(34, 197, 94)', 'rgb(239, 68, 68)', 'rgb(107, 114, 128)'], hoverOffset: 4, borderWidth: 0, }] }, options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+            });
+            
+            // --- TÍCH HỢP MỚI: Render danh sách bình luận chi tiết ---
+            const commentListContainer = document.getElementById('comment-details-list');
+            const commentDetailsSection = document.getElementById('comment-details-section');
+            
+            // Luôn xóa nội dung cũ trước khi thêm mới
+            commentListContainer.innerHTML = ''; 
+
+            if (data.details && data.details.length > 0) {
+                data.details.forEach(comment => {
+                    let sentimentClass = '';
+                    let sentimentIcon = '';
+
+                    switch (comment.sentiment) {
+                        case 'Tích cực':
+                            sentimentClass = 'bg-green-100 text-green-800';
+                            sentimentIcon = '👍';
+                            break;
+                        case 'Tiêu cực':
+                            sentimentClass = 'bg-red-100 text-red-800';
+                            sentimentIcon = '👎';
+                            break;
+                        default: // Trung tính
+                            sentimentClass = 'bg-gray-100 text-gray-800';
+                            sentimentIcon = '😐';
+                            break;
+                    }
+
+                    const commentElementHTML = `
+                        <div class="border border-gray-200 rounded-lg p-3 bg-white">
+                            <p class="text-gray-700 text-sm italic">"${comment.text}"</p>
+                            <div class="flex justify-end items-center mt-2">
+                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full ${sentimentClass}">
+                                    ${sentimentIcon} ${comment.sentiment} (${comment.score}%)
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    commentListContainer.innerHTML += commentElementHTML;
+                });
+                commentDetailsSection.classList.remove('hidden');
+            } else {
+                // Ẩn khu vực chi tiết nếu không có bình luận nào
+                commentDetailsSection.classList.add('hidden');
+            }
+
+            socialResultContainer.classList.remove('hidden');
+        }
+
+        // --- Hàm báo lỗi chung (giữ nguyên) ---
         function showError(message) {
             const errorMessage = document.getElementById('error-message');
             errorMessage.textContent = message;
+            // Ẩn các vùng kết quả khác
+            resultContainer.classList.add('hidden');
+            socialResultContainer.classList.add('hidden');
+            
             errorContainer.classList.remove('hidden', 'fade-in');
             void errorContainer.offsetWidth;
             errorContainer.classList.add('fade-in');
@@ -190,4 +402,3 @@
     </script>
 </body>
 </html>
-

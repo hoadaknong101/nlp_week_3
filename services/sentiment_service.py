@@ -62,6 +62,7 @@ def analyze_sentiment(text: str) -> dict:
         return {
             'language': detected_lang,
             'sentiment': sentiment_info["label"],
+            'label': sentiment_info["label"],
             'score': round(score * 100, 2),
             'emoji': sentiment_info["emoji"],
             'color': sentiment_info["color"]
