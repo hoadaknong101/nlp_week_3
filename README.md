@@ -5,13 +5,17 @@
 ## **Các tính năng nổi bật**
 
 * **Phân tích đa ngôn ngữ**: Hỗ trợ cả Tiếng Anh và Tiếng Việt.  
+* **Sử dụng mô hình tiên tiến**:  
+  * Tiếng Anh: Sử dụng mô hình [distilbert-base-uncased-finetuned-sst-2-english](https://huggingface.co/distilbert-base-uncased-finetuned-sst-2-english) (Sanh et al., 2019).  
+  * Tiếng Việt: Sử dụng mô hình [PhoBERT](https://huggingface.co/vinai/phobert-base) (Nguyen & Tuan Nguyen, Findings 2020).
 * **Tự động nhận diện ngôn ngữ**: Hệ thống tự động xác định ngôn ngữ đầu vào và chọn model phù hợp.  
 * **Giao diện hiện đại**: Giao diện người dùng thân thiện, mượt mà được xây dựng với Tailwind CSS.  
 * **Phản hồi trực quan (Tính năng sáng tạo)**:  
   * Kết quả được hiển thị cùng **emoji** tương ứng với cảm xúc.  
   * Thẻ kết quả **đổi màu** theo tình cảm (Xanh-Tích cực, Đỏ-Tiêu cực).  
   * Điểm tin cậy được thể hiện dưới dạng một **đồng hồ đo dạng tròn** (circular gauge) đẹp mắt.  
-* **Kiến trúc sạch (Clean Architecture)**: Mã nguồn được tổ chức thành các lớp riêng biệt (giao diện, logic nghiệp vụ, hạ tầng) để dễ dàng bảo trì và mở rộng.
+* **Clean Architecture**: Mã nguồn được tổ chức thành các lớp riêng biệt (giao diện, logic nghiệp vụ, hạ tầng) để dễ dàng bảo trì và mở rộng.
+* **Triển khai dễ dàng với Docker**: Có thể chạy ứng dụng trong container Docker để đảm bảo tính nhất quán môi trường.
 
 ## **Cấu trúc thư mục**
 
@@ -56,3 +60,9 @@ Chạy lệnh dưới đây để thực hiện build và chạy ứng dụng tr
 Sử dụng một máy chủ WSGI như Gunicorn:
 
 ```gunicorn \--workers 3 \--bind 0.0.0.0:8000 app:app```
+
+
+## **References**
+1. Sanh, V., Debut, L., Chaumond, J., & Wolf, T. (2019). DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter. arXiv preprint arXiv:1910.01108.
+
+2. [PhoBERT: Pre-trained language models for Vietnamese](https://aclanthology.org/2020.findings-emnlp.92/) (Nguyen & Tuan Nguyen, Findings 2020)
