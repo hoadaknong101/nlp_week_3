@@ -2,6 +2,12 @@
 
 Đây là một ứng dụng web được xây dựng bằng Flask, có khả năng phân tích tình cảm của văn bản bằng Tiếng Việt và Tiếng Anh.
 
+## **Thành viên thực hiện**
+1. Trần Thị Minh Ánh 
+2. Hà Quốc Toàn 
+3. Phạm Đinh Quốc Hòa
+4. Nguyễn Phương Thịnh
+
 ## **Các tính năng nổi bật**
 
 * **Phân tích đa ngôn ngữ**: Hỗ trợ cả Tiếng Anh và Tiếng Việt.  
